@@ -433,14 +433,27 @@
     /* ── AUTH MODAL ── */
     #modal-backdrop {
       display: none; position: fixed; inset: 0;
-      background: rgba(255,251,245,0.72); /* Warm, semi-transparent white */
+      background: rgba(255,251,245,0.72);
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
       z-index: 100;
+      display: none; flex-direction: column; /* Stack modal and title */
       align-items: center; justify-content: center;
+      gap: 24px;
       animation: backdropFade 0.3s ease;
     }
     @keyframes backdropFade { from { opacity:0; } to { opacity:1; } }
     #modal-backdrop.open { display: flex; }
+
+    #gate-title {
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 0.25em;
+      text-transform: lowercase;
+      color: var(--text-secondary);
+      opacity: 0.7;
+      animation: titleSlide 0.8s ease;
+    }
+    @keyframes titleSlide { from { opacity:0; transform:translateY(10px); } to { opacity:0.7; transform:translateY(0); } }
     
     /* Gatekeeper mode: hide close button and disable clicking outside */
     #modal-backdrop.locked #modal-close { display: none; }
@@ -600,6 +613,7 @@
     </button>
     <div id="modal-error"></div>
   </div>
+  <div id="gate-title">your weekly planner.</div>
 </div>
 
 <div id="save-indicator">Saved</div>
