@@ -602,7 +602,8 @@
   import {
     getAuth, onAuthStateChanged, signOut,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
-    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult
+    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+    setPersistence, browserLocalPersistence
   } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
   import {
     getDatabase, ref, set, get, remove
@@ -1335,7 +1336,11 @@
   });
 
   /* ── AUTH ── */
+  // Ensure we stay logged in even after browser closes
+  setPersistence(auth, browserLocalPersistence).catch(e => console.error("Persistence error:", e));
+
   onAuthStateChanged(auth, async (user) => {
+    console.log("Auth State Changed. User:", user ? user.email : "Logged out");
     currentUser = user;
     if (user) {
       document.getElementById('user-name').textContent = user.displayName||user.email||'User';
@@ -1352,14 +1357,16 @@
   });
 
   // Handle the redirect result when coming back from Google
-  console.log("Checking for redirect result...");
   getRedirectResult(auth)
     .then((result) => {
-      if (result?.user) console.log("Successfully logged in via redirect:", result.user.email);
+      if (result?.user) {
+        console.log("Successfully logged in via redirect:", result.user.email);
+      }
     })
     .catch((err) => {
-      console.error("Redirect Error:", err);
+      console.error("Redirect Error Detail:", err);
       if (err.code !== 'auth/popup-closed-by-user') {
+        alert("Login Redirect Error: " + err.code + " - " + err.message);
         openModal();
         const errEl = document.getElementById('modal-error');
         if (errEl) errEl.textContent = friendlyError(err.code);
