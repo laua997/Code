@@ -1308,7 +1308,8 @@
           if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
           const c=document.createElement('canvas'); c.width=w; c.height=h;
           c.getContext('2d').drawImage(img,0,0,w,h);
-          resolve(c.toDataURL('image/jpeg',0.68));
+          // Use WebP to support transparency while keeping file size small
+          resolve(c.toDataURL('image/webp', 0.8));
         };
         img.src = ev.target.result;
       };
