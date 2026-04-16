@@ -798,7 +798,11 @@
 
   /** Toggle bullet, check, bold, italic, or underline formatting */
   function formatLine(editor, type) {
-    if (editor.contentEditable !== 'true') return;
+    console.log(`Format Action: ${type} on editor:`, editor.id);
+    if (editor.contentEditable !== 'true') {
+      console.warn("Editor not editable, forcing true.");
+      editor.contentEditable = 'true';
+    }
 
     editor.focus();
 
@@ -964,7 +968,8 @@
 
       toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
         btn.addEventListener('mousedown', (e) => {
-          e.preventDefault(); // don't lose focus
+          e.preventDefault();
+          console.log(`Day Button Clicked: ${btn.dataset.action} for day-${i}`);
           formatLine(editor, btn.dataset.action);
           debounceSave(`day${i}`, editor.innerHTML);
           setTimeout(() => updateToolbarState(editor, toolbar), 0);
@@ -994,6 +999,7 @@
       notesToolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
         btn.addEventListener('mousedown', (e) => {
           e.preventDefault();
+          console.log(`Notes Button Clicked: ${btn.dataset.action}`);
           formatLine(notesEd, btn.dataset.action);
           debounceSave('notes', notesEd.innerHTML);
           setTimeout(() => updateToolbarState(notesEd, notesToolbar), 0);
