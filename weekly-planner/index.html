@@ -602,7 +602,7 @@
   import {
     getAuth, onAuthStateChanged, signOut,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
-    GoogleAuthProvider, signInWithPopup
+    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult
   } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
   import {
     getDatabase, ref, set, get, remove
@@ -783,8 +783,15 @@
       node = node.parentElement;
     }
     if (!node || node === editor) return null;
-    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-    if (node === editor) return null;
+    
+    // Wrap bare text nodes in a div so classes can be applied
+    if (node.nodeType === Node.TEXT_NODE) {
+      const div = document.createElement('div');
+      editor.insertBefore(div, node);
+      div.appendChild(node);
+      return div;
+    }
+    
     return node;
   }
 
@@ -806,7 +813,11 @@
     if (!line) {
       if (!editor.querySelector('div')) {
         const newDiv = document.createElement('div');
-        newDiv.innerHTML = '<br>';
+        if (editor.textContent.trim() || editor.innerHTML.includes('<br>')) {
+          newDiv.innerHTML = editor.innerHTML;
+        } else {
+          newDiv.innerHTML = '<br>';
+        }
         editor.innerHTML = '';
         editor.appendChild(newDiv);
         const range = document.createRange();
@@ -1337,6 +1348,13 @@
       document.getElementById('user-info').style.display = 'none';
       document.getElementById('auth-btn').style.display  = 'block';
       disableEditors();
+      
+      // Check for redirect result if we just came back from Google
+      getRedirectResult(auth).catch((err) => {
+        console.error("Redirect Error:", err);
+        const errEl = document.getElementById('modal-error');
+        if (errEl) errEl.textContent = friendlyError(err.code);
+      });
     }
   });
 
@@ -1377,12 +1395,18 @@
 
   document.getElementById('google-btn').addEventListener('click', async () => {
     const errEl=document.getElementById('modal-error'); errEl.textContent='';
-    try { await signInWithPopup(auth,new GoogleAuthProvider()); }
-    catch(err){ if(err.code!=='auth/popup-closed-by-user') errEl.textContent=friendlyError(err.code); }
+    try { 
+      console.log("Starting Google Sign-in...");
+      await signInWithRedirect(auth, new GoogleAuthProvider()); 
+    }
+    catch(err){ 
+      console.error("Google Sign-in Error:", err);
+      if(err.code!=='auth/popup-closed-by-user') errEl.textContent=friendlyError(err.code); 
+    }
   });
 
   function friendlyError(code) {
-    return ({
+    const messages = {
       'auth/invalid-email':          'Invalid email address.',
       'auth/user-disabled':          'This account has been disabled.',
       'auth/user-not-found':         'No account found with this email.',
@@ -1392,7 +1416,10 @@
       'auth/too-many-requests':      'Too many attempts. Please try again later.',
       'auth/invalid-credential':     'Invalid email or password.',
       'auth/network-request-failed': 'Network error. Check your connection.',
-    })[code] || 'Something went wrong. Please try again.';
+      'auth/operation-not-allowed':  'Google Sign-in is not enabled in Firebase Console.',
+      'auth/unauthorized-domain':    'This domain (localhost) is not authorized in Firebase Console.',
+    };
+    return messages[code] || `Error: ${code}. Please check Firebase Console.`;
   }
 
   document.getElementById('password-input').addEventListener('keydown', (e) => {
