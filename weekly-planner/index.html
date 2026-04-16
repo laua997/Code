@@ -754,7 +754,19 @@
     const uid = currentUser.uid;
     try {
       const snap = await get(ref(db, `users/${uid}/weeks/${key}`));
-      const data = snap.val() || {};
+      let data = snap.val() || {};
+
+      // First-time welcome message
+      if (!snap.exists()) {
+        const welcomeSnap = await get(ref(db, `users/${uid}/profile/welcomeDone`));
+        if (!welcomeSnap.val()) {
+          const msg = "welcome to your weekly journal. drag and drop images, double click to resize, and use the list and check buttons to stay organized :)";
+          data.notes = `<div>${msg}</div>`;
+          // Mark welcome as shown and save the initial notes state
+          set(ref(db, `users/${uid}/profile/welcomeDone`), true);
+          set(ref(db, `users/${uid}/weeks/${key}/notes`), data.notes);
+        }
+      }
 
       for (let i = 0; i < 7; i++) {
         const ed = document.getElementById(`day-${i}`);
