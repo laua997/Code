@@ -1409,14 +1409,19 @@
   });
 
   document.getElementById('google-btn').addEventListener('click', async () => {
-    const errEl=document.getElementById('modal-error'); errEl.textContent='';
+    const errEl = document.getElementById('modal-error'); 
+    errEl.textContent = '';
     try { 
-      console.log("Starting Google Sign-in...");
-      await signInWithRedirect(auth, new GoogleAuthProvider()); 
+      console.log("Starting Google Sign-in (Popup)...");
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      console.log("Popup Login Success:", result.user.email);
     }
-    catch(err){ 
+    catch(err) { 
       console.error("Google Sign-in Error:", err);
-      if(err.code!=='auth/popup-closed-by-user') errEl.textContent=friendlyError(err.code); 
+      if (err.code !== 'auth/popup-closed-by-user') {
+        alert("Login Error: " + err.code + "\n" + err.message);
+        errEl.textContent = friendlyError(err.code);
+      }
     }
   });
 
