@@ -236,31 +236,17 @@
     }
 
     .toolbar-btn {
-      background: none;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      padding: 2px 5px;
-      cursor: pointer;
-      font-size: 11px;
-      color: var(--text-secondary);
-      line-height: 1;
-      transition: all 0.12s;
-      font-family: 'Roboto', sans-serif;
-      font-weight: 500;
-      letter-spacing: 0.03em;
-      display: flex; align-items: center; gap: 3px;
+      display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 8px; font-family: 'Roboto', sans-serif; font-size: 11px;
+      color: var(--text-secondary); cursor: pointer; transition: all 0.1s;
+      white-space: nowrap;
     }
-    .toolbar-btn:hover {
-      border-color: var(--border);
-      color: var(--accent);
-      background: var(--bg);
-    }
-    .toolbar-btn.active {
-      border-color: rgba(61,90,128,0.25);
-      color: var(--accent);
-      background: rgba(61,90,128,0.07);
-    }
-    .toolbar-btn svg { flex-shrink: 0; }
+    .toolbar-btn:hover { background: var(--bg); border-color: #ccc; color: var(--text-primary); }
+    .toolbar-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    
+    .toolbar-btn.bold-btn { font-weight: 700; width: 24px; justify-content: center; }
+    .toolbar-btn.underline-btn { text-decoration: underline; width: 24px; justify-content: center; }
 
     /* ── CONTENTEDITABLE EDITOR ── */
     .day-editor, .notes-editor {
@@ -556,27 +542,10 @@
       <div class="notes-header">
         <span class="notes-label">Notes</span>
         <div class="editor-toolbar" id="notes-toolbar">
-          <button class="toolbar-btn" data-action="bullet" title="Bullet list">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <circle cx="2" cy="3" r="1.5" fill="currentColor"/>
-              <circle cx="2" cy="6" r="1.5" fill="currentColor"/>
-              <circle cx="2" cy="9" r="1.5" fill="currentColor"/>
-              <rect x="5" y="2.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
-              <rect x="5" y="5.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
-              <rect x="5" y="8.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
-            </svg>
-            List
-          </button>
-          <button class="toolbar-btn" data-action="check" title="Checklist">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <rect x="0.75" y="0.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
-              <rect x="0.75" y="6.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M2 3l1 1 1.5-1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-              <rect x="7" y="2.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
-              <rect x="7" y="8.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
-            </svg>
-            Check
-          </button>
+          <button class="toolbar-btn" data-action="bullet" title="Bullet list">List</button>
+          <button class="toolbar-btn" data-action="check" title="Checklist">Check</button>
+          <button class="toolbar-btn bold-btn" data-action="bold" title="Bold (Ctrl+B)">B</button>
+          <button class="toolbar-btn underline-btn" data-action="underline" title="Underline (Ctrl+U)">U</button>
         </div>
       </div>
       <div id="notes-editor" class="notes-editor"
@@ -693,27 +662,10 @@
           <span class="day-name">${DAYS[i]}</span>
           <span class="day-date">${fmtDate(date)}</span>
           <div class="editor-toolbar">
-            <button class="toolbar-btn" data-action="bullet" title="Bullet list">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <circle cx="2" cy="3" r="1.5" fill="currentColor"/>
-                <circle cx="2" cy="6" r="1.5" fill="currentColor"/>
-                <circle cx="2" cy="9" r="1.5" fill="currentColor"/>
-                <rect x="5" y="2.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
-                <rect x="5" y="5.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
-                <rect x="5" y="8.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
-              </svg>
-              List
-            </button>
-            <button class="toolbar-btn" data-action="check" title="Checklist">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <rect x="0.75" y="0.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
-                <rect x="0.75" y="6.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
-                <path d="M2 3l1 1 1.5-1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                <rect x="7" y="2.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
-                <rect x="7" y="8.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
-              </svg>
-              Check
-            </button>
+            <button class="toolbar-btn" data-action="bullet" title="Bullet list">List</button>
+            <button class="toolbar-btn" data-action="check" title="Checklist">Check</button>
+            <button class="toolbar-btn bold-btn" data-action="bold" title="Bold (Ctrl+B)">B</button>
+            <button class="toolbar-btn underline-btn" data-action="underline" title="Underline (Ctrl+U)">U</button>
           </div>
         </div>
         <div class="day-editor" id="day-${i}"
@@ -833,13 +785,20 @@
     return node;
   }
 
-  /** Toggle bullet or check formatting on the cursor's line */
+  /** Toggle bullet, check, bold, or underline formatting */
   function formatLine(editor, type) {
     if (editor.contentEditable !== 'true') return;
 
     editor.focus();
 
+    if (type === 'bold' || type === 'underline') {
+      document.execCommand(type, false, null);
+      return;
+    }
+
     let line = getCursorLine(editor);
+    ...
+
 
     // No cursor line found — editor is empty or cursor is at the root.
     // Create a proper child div, move cursor into it, then use it.
@@ -934,12 +893,34 @@
     });
   }
 
-  /** Update active state on toolbar buttons based on cursor position */
+  /** Keyboard shortcuts for bold and underline */
+  function setupShortcuts(editor, field) {
+    editor.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key.toLowerCase() === 'b') {
+          e.preventDefault();
+          formatLine(editor, 'bold');
+          debounceSave(field, editor.innerHTML);
+        } else if (e.key.toLowerCase() === 'u') {
+          e.preventDefault();
+          formatLine(editor, 'underline');
+          debounceSave(field, editor.innerHTML);
+        }
+      }
+    });
+  }
+
+  /** Update active state on toolbar buttons based on selection/cursor */
   function updateToolbarState(editor, toolbar) {
     const line = getCursorLine(editor);
     toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
       const action = btn.dataset.action;
-      btn.classList.toggle('active', !!(line && line.classList.contains(`line-${action}`)));
+      if (action === 'bold' || action === 'underline') {
+        const active = document.queryCommandState(action);
+        btn.classList.toggle('active', active);
+      } else {
+        btn.classList.toggle('active', !!(line && line.classList.contains(`line-${action}`)));
+      }
     });
   }
 
@@ -982,6 +963,7 @@
 
       setupListKeyboard(editor, `day${i}`);
       setupCheckboxClick(editor, `day${i}`);
+      setupShortcuts(editor, `day${i}`);
       setupPaste(editor);
     }
 
@@ -1010,6 +992,7 @@
 
       setupListKeyboard(notesEd, 'notes');
       setupCheckboxClick(notesEd, 'notes');
+      setupShortcuts(notesEd, 'notes');
       setupPaste(notesEd);
     }
   }
