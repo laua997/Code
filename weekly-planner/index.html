@@ -244,7 +244,10 @@
     }
     .toolbar-btn:hover { background: var(--bg); border-color: #ccc; color: var(--text-primary); }
     .toolbar-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    
     .toolbar-btn.bold-btn { font-weight: 700; width: 24px; justify-content: center; }
+    .toolbar-btn.italic-btn { font-style: italic; width: 24px; justify-content: center; font-family: 'serif'; }
+    .toolbar-btn.underline-btn { text-decoration: underline; width: 24px; justify-content: center; }
 
     /* ── CONTENTEDITABLE EDITOR ── */
     .day-editor, .notes-editor {
@@ -543,6 +546,8 @@
           <button class="toolbar-btn" data-action="bullet" title="Bullet list">List</button>
           <button class="toolbar-btn" data-action="check" title="Checklist">Check</button>
           <button class="toolbar-btn bold-btn" data-action="bold" title="Bold (Ctrl+B)">B</button>
+          <button class="toolbar-btn italic-btn" data-action="italic" title="Italic (Ctrl+I)">I</button>
+          <button class="toolbar-btn underline-btn" data-action="underline" title="Underline (Ctrl+U)">U</button>
         </div>
       </div>
       <div id="notes-editor" class="notes-editor"
@@ -662,6 +667,8 @@
             <button class="toolbar-btn" data-action="bullet" title="Bullet list">List</button>
             <button class="toolbar-btn" data-action="check" title="Checklist">Check</button>
             <button class="toolbar-btn bold-btn" data-action="bold" title="Bold (Ctrl+B)">B</button>
+            <button class="toolbar-btn italic-btn" data-action="italic" title="Italic (Ctrl+I)">I</button>
+            <button class="toolbar-btn underline-btn" data-action="underline" title="Underline (Ctrl+U)">U</button>
           </div>
         </div>
         <div class="day-editor" id="day-${i}"
@@ -781,14 +788,14 @@
     return node;
   }
 
-  /** Toggle bullet, check, or bold formatting */
+  /** Toggle bullet, check, bold, italic, or underline formatting */
   function formatLine(editor, type) {
     if (editor.contentEditable !== 'true') return;
 
     editor.focus();
 
-    if (type === 'bold') {
-      document.execCommand('bold', false, null);
+    if (type === 'bold' || type === 'italic' || type === 'underline') {
+      document.execCommand(type, false, null);
       return;
     }
 
@@ -890,10 +897,14 @@
   /** Keyboard shortcuts */
   function setupShortcuts(editor, field) {
     editor.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-        e.preventDefault();
-        formatLine(editor, 'bold');
-        debounceSave(field, editor.innerHTML);
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'b' || key === 'i' || key === 'u') {
+          e.preventDefault();
+          const action = key === 'b' ? 'bold' : (key === 'i' ? 'italic' : 'underline');
+          formatLine(editor, action);
+          debounceSave(field, editor.innerHTML);
+        }
       }
     });
   }
@@ -903,8 +914,8 @@
     const line = getCursorLine(editor);
     toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
       const action = btn.dataset.action;
-      if (action === 'bold') {
-        btn.classList.toggle('active', document.queryCommandState('bold'));
+      if (['bold','italic','underline'].includes(action)) {
+        btn.classList.toggle('active', document.queryCommandState(action));
       } else {
         btn.classList.toggle('active', !!(line && line.classList.contains(`line-${action}`)));
       }
