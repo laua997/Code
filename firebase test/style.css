@@ -1,0 +1,29 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; background: #fff; }
+
+header { height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+.header-left, .header-right { display: flex; align-items: center; gap: 15px; }
+
+button { cursor: pointer; padding: 8px 16px; border-radius: 6px; border: none; font-size: 14px; }
+.btn-primary { background: #000; color: #fff; }
+.btn-secondary { background: #fff; border: 1px solid #ddd; }
+.btn-text { background: none; color: #888; margin-top: 10px; width: 100%; }
+.btn-google { background: #fff; border: 1px solid #ddd; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+
+main { display: flex; flex: 1; overflow: hidden; }
+.column { flex: 1; padding: 30px; overflow-y: auto; }
+.weekly-column { border-right: 1px solid #eee; }
+.day-box { margin-bottom: 20px; }
+label { display: block; font-size: 11px; font-weight: bold; color: #bbb; text-transform: uppercase; margin-bottom: 5px; }
+textarea { width: 100%; border: none; outline: none; font-size: 16px; background: transparent; resize: none; }
+.weekly-column textarea { height: 50px; border-bottom: 1px solid #f9f9f9; }
+#generalNotes { height: 100%; }
+
+.hidden { display: none !important; }
+.logged-out main { opacity: 0.2; pointer-events: none; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-card { background: #fff; padding: 30px; border: 1px solid #eee; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+.modal-card input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+.divider { margin: 15px 0; border-bottom: 1px solid #eee; line-height: 0.1em; }
+.divider span { background: #fff; padding: 0 10px; color: #ccc; font-size: 12px; }
