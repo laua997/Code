@@ -433,10 +433,18 @@
     /* ── AUTH MODAL ── */
     #modal-backdrop {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.35); z-index: 100;
+      background: rgba(255,251,245,0.72); /* Warm, semi-transparent white */
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      z-index: 100;
       align-items: center; justify-content: center;
+      animation: backdropFade 0.3s ease;
     }
+    @keyframes backdropFade { from { opacity:0; } to { opacity:1; } }
     #modal-backdrop.open { display: flex; }
+    
+    /* Gatekeeper mode: hide close button and disable clicking outside */
+    #modal-backdrop.locked #modal-close { display: none; }
+    #modal-backdrop.locked { cursor: default; }
 
     #auth-modal {
       background: var(--surface); border-radius: 14px;
@@ -1348,10 +1356,12 @@
   onAuthStateChanged(auth, async (user) => {
     console.log("Auth State Changed. User:", user ? user.email : "Logged out");
     currentUser = user;
+    const mb = document.getElementById('modal-backdrop');
     if (user) {
       document.getElementById('user-name').textContent = user.displayName||user.email||'User';
       document.getElementById('user-info').style.display = 'flex';
       document.getElementById('auth-btn').style.display  = 'none';
+      mb.classList.remove('locked');
       closeModal();
       await loadWeekData();
       attachListeners();
@@ -1359,6 +1369,9 @@
       document.getElementById('user-info').style.display = 'none';
       document.getElementById('auth-btn').style.display  = 'block';
       disableEditors();
+      // Force the login gate
+      mb.classList.add('locked');
+      openModal();
     }
   });
 
@@ -1388,7 +1401,11 @@
 
   document.getElementById('auth-btn').addEventListener('click', openModal);
   document.getElementById('modal-close').addEventListener('click', closeModal);
-  document.getElementById('modal-backdrop').addEventListener('click', (e) => { if(e.target===document.getElementById('modal-backdrop')) closeModal(); });
+  document.getElementById('modal-backdrop').addEventListener('click', (e) => { 
+    if(e.target === document.getElementById('modal-backdrop') && !e.target.classList.contains('locked')) {
+      closeModal(); 
+    }
+  });
 
   document.querySelectorAll('.modal-tab').forEach(tab => {
     tab.addEventListener('click', () => {
