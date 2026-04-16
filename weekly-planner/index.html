@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Planner</title>
+  <meta name="description" content="A minimalist weekly planner with sticker images and rich text, powered by Firebase." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f3;
+      --surface: #ffffff;
+      --border: #e5e2db;
+      --text-primary: #1a1a1a;
+      --text-secondary: #888;
+      --accent: #3d5a80;
+      --accent-hover: #2c4460;
+      --day-gap: 6px;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 16px;
+      position: relative;
+      z-index: 20;
+    }
+
+    .week-nav { display: flex; align-items: center; gap: 8px; }
+
+    .week-nav-arrow {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 28px; height: 28px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      transition: border-color 0.15s, color 0.15s;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .week-nav-arrow:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Calendar trigger button */
+    .cal-trigger-wrap { position: relative; }
+    #calendar-trigger {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 14px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    #calendar-trigger:hover { border-color: var(--accent); color: var(--accent); }
+    #calendar-trigger svg { opacity: 0.45; }
+
+    /* ── MONTH CALENDAR POPUP ── */
+    #month-calendar {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+      padding: 14px 12px 10px;
+      z-index: 200;
+      width: 252px;
+      display: none;
+      animation: calFadeIn 0.12s ease;
+    }
+    @keyframes calFadeIn { from { opacity:0; transform:translateX(-50%) translateY(-4px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+    #month-calendar.open { display: block; }
+
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .cal-month-label {
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary); letter-spacing: 0.01em;
+    }
+    .cal-nav {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-secondary); font-size: 16px;
+      width: 24px; height: 24px;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.12s, background 0.12s;
+    }
+    .cal-nav:hover { color: var(--accent); background: var(--bg); }
+
+    .cal-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .cal-grid th {
+      font-size: 9.5px; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--text-secondary);
+      padding: 2px 0 7px; text-align: center;
+    }
+    .cal-week-row {
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.1s;
+    }
+    .cal-week-row:hover .cal-day-cell { background: var(--bg); }
+    .cal-week-row:hover .cal-day-cell:first-child { border-radius: 6px 0 0 6px; }
+    .cal-week-row:hover .cal-day-cell:last-child  { border-radius: 0 6px 6px 0; }
+    .cal-week-row.active-week .cal-day-cell { background: rgba(61,90,128,0.1); }
+    .cal-week-row.active-week .cal-day-cell:first-child { border-radius: 6px 0 0 6px; }
+    .cal-week-row.active-week .cal-day-cell:last-child  { border-radius: 0 6px 6px 0; }
+
+    .cal-day-cell {
+      padding: 5px 0; text-align: center;
+      font-size: 12px; font-weight: 400;
+      color: var(--text-primary);
+      transition: background 0.1s;
+      vertical-align: middle;
+    }
+    .cal-day-cell.dim { color: #ccc; }
+    .cal-today-num {
+      background: var(--accent); color: #fff;
+      border-radius: 50%;
+      width: 21px; height: 21px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 500;
+    }
+
+    .header-title {
+      font-size: 15px; font-weight: 300;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-secondary);
+      position: absolute; left: 50%; transform: translateX(-50%);
+    }
+
+    #auth-btn {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 6px;
+      padding: 7px 16px;
+      font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.02em;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    #auth-btn:hover { background: var(--accent-hover); }
+
+    #user-info { display: flex; align-items: center; gap: 10px; }
+    #user-name {
+      font-size: 13px; color: var(--text-secondary);
+      max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #sign-out-btn {
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 12px;
+      font-family: 'Roboto', sans-serif; font-size: 12px; color: var(--text-secondary);
+      cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    #sign-out-btn:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* ── MAIN LAYOUT ── */
+    #main-area {
+      display: flex; flex: 1; overflow: hidden;
+      position: relative;
+    }
+
+    /* ── WEEK PANEL ── */
+    #week-panel {
+      width: 56%;
+      display: flex; flex-direction: column;
+      gap: var(--day-gap);
+      padding: 14px 10px 14px 16px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .day-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 80px;
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .day-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px 6px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .day-name {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--accent);
+    }
+    .day-date { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+    .day-card.today .day-name { color: #e07b39; }
+    .day-card.today { border-color: #f0c99b; }
+
+    /* ── TOOLBAR ── */
+    .editor-toolbar {
+      display: flex; gap: 2px;
+      margin-left: auto; align-items: center;
+    }
+
+    .toolbar-btn {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 2px 5px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1;
+      transition: all 0.12s;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .toolbar-btn:hover {
+      border-color: var(--border);
+      color: var(--accent);
+      background: var(--bg);
+    }
+    .toolbar-btn.active {
+      border-color: rgba(61,90,128,0.25);
+      color: var(--accent);
+      background: rgba(61,90,128,0.07);
+    }
+    .toolbar-btn svg { flex-shrink: 0; }
+
+    /* ── CONTENTEDITABLE EDITOR ── */
+    .day-editor, .notes-editor {
+      flex: 1;
+      outline: none;
+      padding: 8px 12px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 13.5px; font-weight: 300;
+      line-height: 1.7; color: var(--text-primary);
+      overflow-y: auto;
+      min-height: 52px;
+      word-break: break-word;
+      cursor: text;
+    }
+
+    .notes-editor { padding: 10px 14px; }
+
+    /* Placeholder via data attribute */
+    [data-empty="true"]::before {
+      content: attr(data-placeholder);
+      color: #ccc;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* Disabled / locked state */
+    [contenteditable="false"].day-editor,
+    [contenteditable="false"].notes-editor {
+      cursor: not-allowed;
+      color: #aaa;
+    }
+
+    /* ── BULLET ITEMS ── */
+    .line-bullet {
+      padding-left: 1.1em;
+      text-indent: -1.1em;
+    }
+    .line-bullet::before {
+      content: '• ';
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── CHECKLIST ITEMS ── */
+    .line-check {
+      padding-left: 1.5em;
+      text-indent: -1.5em;
+      cursor: default;
+    }
+    .line-check::before {
+      content: '☐ ';
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    /* Checked state */
+    .line-check.done {
+      text-decoration: line-through;
+      color: #bbb;
+    }
+    .line-check.done::before {
+      content: '☑ ';
+      color: var(--accent);
+    }
+
+    /* ── NOTES PANEL ── */
+    #notes-panel {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 14px 16px 14px 10px;
+    }
+
+    .notes-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .notes-header {
+      display: flex; align-items: center;
+      padding: 7px 10px 6px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .notes-label {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    /* ── DRAG STATES ── */
+    .day-card.drag-over {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(61,90,128,0.18) !important;
+      background: rgba(61,90,128,0.025) !important;
+    }
+    .notes-card.drag-over {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(61,90,128,0.18) !important;
+      background: rgba(61,90,128,0.025) !important;
+    }
+
+    /* ── DRAG OVERLAY ── */
+    #drag-overlay {
+      position: fixed; inset: 56px 0 0 0;
+      pointer-events: none; z-index: 10;
+      opacity: 0; transition: opacity 0.18s;
+    }
+    #drag-overlay.visible { opacity: 1; }
+    #drag-overlay-inner {
+      position: absolute; inset: 8px;
+      border: 2px dashed rgba(61,90,128,0.3);
+      border-radius: 12px;
+      background: rgba(61,90,128,0.03);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #drag-overlay-text {
+      font-size: 12px; color: var(--accent);
+      letter-spacing: 0.07em; font-weight: 400;
+      opacity: 0.7; text-transform: uppercase;
+    }
+
+    /* ── STICKER LAYER ── */
+    #sticker-layer {
+      position: absolute; inset: 0;
+      pointer-events: none; z-index: 8;
+      overflow: hidden;
+    }
+
+    .sticker {
+      position: absolute; pointer-events: all;
+      cursor: grab; user-select: none; border-radius: 6px;
+    }
+    .sticker:active { cursor: grabbing; }
+    .sticker img {
+      width: 100%; height: auto; display: block;
+      border-radius: 5px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+      pointer-events: none;
+      transition: box-shadow 0.15s;
+    }
+    .sticker:hover img { box-shadow: 0 5px 20px rgba(0,0,0,0.24); }
+
+    .sticker-del {
+      position: absolute; top: -8px; right: -8px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(20,20,20,0.72);
+      border: 1.5px solid rgba(255,255,255,0.45);
+      color: #fff; font-size: 9px; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      z-index: 12; transition: background 0.12s;
+      line-height: 1; padding: 0; font-family: sans-serif;
+    }
+    .sticker-del:hover { background: rgba(180,45,45,0.9); }
+    .sticker:hover .sticker-del { display: flex; }
+
+    .sticker.selected img {
+      outline: 2px solid var(--accent); outline-offset: 2px;
+    }
+    .resize-handle {
+      position: absolute; bottom: -7px; right: -7px;
+      width: 15px; height: 15px;
+      background: var(--accent); border: 2px solid #fff;
+      border-radius: 3px; cursor: se-resize;
+      display: none; z-index: 12;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .sticker.selected .resize-handle { display: block; }
+    .resize-hint {
+      position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30,30,30,0.75); color: #fff;
+      font-size: 10px; padding: 3px 8px; border-radius: 4px;
+      white-space: nowrap; pointer-events: none;
+      letter-spacing: 0.04em; display: none;
+    }
+    .sticker.selected .resize-hint { display: block; }
+
+    /* ── AUTH MODAL ── */
+    #modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    #modal-backdrop.open { display: flex; }
+
+    #auth-modal {
+      background: var(--surface); border-radius: 14px;
+      padding: 36px 32px 28px; width: 340px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      display: flex; flex-direction: column; gap: 18px;
+      position: relative;
+    }
+    #auth-modal h2 {
+      font-size: 18px; font-weight: 500;
+      color: var(--text-primary); text-align: center; letter-spacing: 0.01em;
+    }
+    .modal-tabs { display: flex; border-bottom: 1px solid var(--border); }
+    .modal-tab {
+      flex: 1; padding: 8px; text-align: center;
+      font-size: 13px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .modal-form { display: flex; flex-direction: column; gap: 10px; }
+    .modal-input {
+      border: 1px solid var(--border); border-radius: 7px;
+      padding: 10px 12px; font-family: 'Roboto', sans-serif;
+      font-size: 13.5px; color: var(--text-primary);
+      outline: none; transition: border-color 0.15s;
+    }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-submit {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 7px; padding: 10px;
+      font-family: 'Roboto', sans-serif; font-size: 13.5px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s; margin-top: 4px;
+    }
+    .modal-submit:hover { background: var(--accent-hover); }
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-secondary); font-size: 11px; letter-spacing: 0.06em;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    #google-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      border: 1px solid var(--border); border-radius: 7px; padding: 9px;
+      font-family: 'Roboto', sans-serif; font-size: 13.5px; font-weight: 500;
+      color: var(--text-primary); background: #fff; cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #google-btn:hover { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(61,90,128,0.08); }
+    #modal-error { font-size: 12px; color: #c0392b; text-align: center; min-height: 16px; }
+    #modal-close {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; font-size: 18px;
+      cursor: pointer; color: var(--text-secondary);
+    }
+
+    /* ── SAVE INDICATOR ── */
+    #save-indicator {
+      position: fixed; bottom: 16px; right: 20px;
+      font-size: 11px; color: var(--text-secondary);
+      opacity: 0; transition: opacity 0.4s;
+      pointer-events: none; z-index: 50;
+    }
+    #save-indicator.visible { opacity: 1; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="week-nav">
+    <button class="week-nav-arrow" id="prev-week" title="Previous week">&#8249;</button>
+    <div class="cal-trigger-wrap">
+      <button id="calendar-trigger" title="Open calendar">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="2.5" width="12" height="10.5" rx="2" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M1 6h12" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M4.5 1v3M9.5 1v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <span id="week-label"></span>
+      </button>
+      <div id="month-calendar"></div>
+    </div>
+    <button class="week-nav-arrow" id="next-week" title="Next week">&#8250;</button>
+  </div>
+  <span class="header-title">Planner</span>
+  <div id="user-info" style="display:none;">
+    <span id="user-name"></span>
+    <button id="sign-out-btn">Sign out</button>
+  </div>
+  <button id="auth-btn">Sign in</button>
+</header>
+
+<!-- ── MAIN ── -->
+<main id="main-area">
+
+  <div id="week-panel"><!-- Day cards injected by JS --></div>
+
+  <div id="notes-panel">
+    <div class="notes-card" id="notes-card">
+      <div class="notes-header">
+        <span class="notes-label">Notes</span>
+        <div class="editor-toolbar" id="notes-toolbar">
+          <button class="toolbar-btn" data-action="bullet" title="Bullet list">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="2" cy="3" r="1.5" fill="currentColor"/>
+              <circle cx="2" cy="6" r="1.5" fill="currentColor"/>
+              <circle cx="2" cy="9" r="1.5" fill="currentColor"/>
+              <rect x="5" y="2.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+              <rect x="5" y="5.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+              <rect x="5" y="8.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+            </svg>
+            List
+          </button>
+          <button class="toolbar-btn" data-action="check" title="Checklist">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="0.75" y="0.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              <rect x="0.75" y="6.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M2 3l1 1 1.5-1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="7" y="2.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
+              <rect x="7" y="8.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
+            </svg>
+            Check
+          </button>
+        </div>
+      </div>
+      <div id="notes-editor" class="notes-editor"
+           data-placeholder="Weekly notes…" data-empty="true"
+           contenteditable="false" spellcheck="true"></div>
+    </div>
+  </div>
+
+  <div id="sticker-layer"></div>
+</main>
+
+<!-- ── DRAG OVERLAY ── -->
+<div id="drag-overlay">
+  <div id="drag-overlay-inner">
+    <span id="drag-overlay-text">Drop image anywhere to place as sticker</span>
+  </div>
+</div>
+
+<!-- ── AUTH MODAL ── -->
+<div id="modal-backdrop">
+  <div id="auth-modal">
+    <button id="modal-close" title="Close">&#x2715;</button>
+    <h2>Welcome back</h2>
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-tab="login">Sign in</div>
+      <div class="modal-tab" data-tab="signup">Create account</div>
+    </div>
+    <div class="modal-form">
+      <input class="modal-input" type="email" id="email-input" placeholder="Email" autocomplete="email" />
+      <input class="modal-input" type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
+      <button class="modal-submit" id="email-auth-btn">Sign in</button>
+    </div>
+    <div class="divider">or</div>
+    <button id="google-btn">
+      <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.1 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.8 13.1 17.9 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.1 24.6c0-1.7-.1-3.3-.4-4.9H24v9.2h12.4c-.5 2.9-2.2 5.3-4.7 6.9l7.4 5.7c4.3-4 6.8-9.9 6.8-16.9z"/>
+        <path fill="#FBBC04" d="M10.9 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.4 13.3A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8.4-6z"/>
+        <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.1 0-11.2-3.6-13.1-8.9l-8.4 6C6.8 42.5 14.8 48 24 48z"/>
+      </svg>
+      Continue with Google
+    </button>
+    <div id="modal-error"></div>
+  </div>
+</div>
+
+<div id="save-indicator">Saved</div>
+
+<!-- ── FIREBASE + APP ── -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, signOut,
+    signInWithEmailAndPassword, createUserWithEmailAndPassword,
+    GoogleAuthProvider, signInWithPopup
+  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import {
+    getDatabase, ref, set, get, remove
+  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAc3KNyiCxebl5E_oqbnj4S7fHPNOCAvP0",
+    authDomain: "laua997-test.firebaseapp.com",
+    databaseURL: "https://laua997-test-default-rtdb.firebaseio.com",
+    projectId: "laua997-test",
+    storageBucket: "laua997-test.firebasestorage.app",
+    messagingSenderId: "34314755962",
+    appId: "1:34314755962:web:e5f935d3321d399a1fc0c3"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getDatabase(app);
+
+  /* ── STATE ── */
+  const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  let currentMonday = getMonday(new Date());
+  let currentUser   = null;
+  let saveTimers    = {};
+  let stickerZ      = 10;
+
+  /* ── HELPERS ── */
+  function getMonday(d) {
+    const day = new Date(d), dow = day.getDay();
+    day.setDate(day.getDate() + ((dow === 0) ? -6 : 1 - dow));
+    day.setHours(0,0,0,0); return day;
+  }
+  function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+  function fmtDate(d) { return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+  function fmtFull(d) { return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
+  function weekKey(m) { return m.toISOString().slice(0,10); }
+  function isToday(d) {
+    const t=new Date();
+    return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();
+  }
+  function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  /* ── BUILD WEEK ── */
+  function buildWeek() {
+    const panel = document.getElementById('week-panel');
+    panel.innerHTML = '';
+    document.getElementById('week-label').textContent =
+      `${fmtDate(currentMonday)} – ${fmtDate(addDays(currentMonday,6))}`;
+    // Rebuild calendar if open to refresh selected-week highlight
+    if (document.getElementById('month-calendar').classList.contains('open')) buildCalendar();
+
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(currentMonday, i);
+      const card = document.createElement('div');
+      card.className = 'day-card' + (isToday(date) ? ' today' : '');
+      card.id = `day-card-${i}`;
+      card.innerHTML = `
+        <div class="day-header">
+          <span class="day-name">${DAYS[i]}</span>
+          <span class="day-date">${fmtDate(date)}</span>
+          <div class="editor-toolbar">
+            <button class="toolbar-btn" data-action="bullet" title="Bullet list">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="2" cy="3" r="1.5" fill="currentColor"/>
+                <circle cx="2" cy="6" r="1.5" fill="currentColor"/>
+                <circle cx="2" cy="9" r="1.5" fill="currentColor"/>
+                <rect x="5" y="2.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="5" y="5.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="5" y="8.25" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+              </svg>
+              List
+            </button>
+            <button class="toolbar-btn" data-action="check" title="Checklist">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="0.75" y="0.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+                <rect x="0.75" y="6.75" width="4.5" height="4.5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M2 3l1 1 1.5-1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="7" y="2.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="7" y="8.25" width="4.5" height="1.5" rx="0.75" fill="currentColor"/>
+              </svg>
+              Check
+            </button>
+          </div>
+        </div>
+        <div class="day-editor" id="day-${i}"
+             data-placeholder="…" data-empty="true"
+             contenteditable="false" spellcheck="true"></div>
+      `;
+      panel.appendChild(card);
+    }
+  }
+
+  /* ── EDITOR CONTENT ── */
+  function setEditorContent(editor, value) {
+    if (!value) {
+      editor.innerHTML = '';
+    } else if (value.includes('<div') || value.includes('<br')) {
+      editor.innerHTML = value;
+    } else {
+      // Migrate from old plain-text textarea format
+      editor.innerHTML = value.split('\n')
+        .map(line => `<div>${line ? escapeHtml(line) : '<br>'}</div>`)
+        .join('');
+    }
+    checkEmpty(editor);
+  }
+
+  function checkEmpty(editor) {
+    const t = editor.textContent.trim();
+    const h = editor.innerHTML;
+    const empty = !t && (h===''||h==='<br>'||h==='<div><br></div>'||h==='<div></div>');
+    if (empty) editor.dataset.empty = 'true';
+    else delete editor.dataset.empty;
+  }
+
+  /* ── LOAD DATA ── */
+  async function loadWeekData() {
+    if (!currentUser) return;
+    const key = weekKey(currentMonday);
+    const uid = currentUser.uid;
+    try {
+      const snap = await get(ref(db, `users/${uid}/weeks/${key}`));
+      const data = snap.val() || {};
+
+      for (let i = 0; i < 7; i++) {
+        const ed = document.getElementById(`day-${i}`);
+        if (ed) setEditorContent(ed, data[`day${i}`] || '');
+      }
+      const notesEd = document.getElementById('notes-editor');
+      if (notesEd) setEditorContent(notesEd, data.notes || '');
+
+      clearStickers();
+      const stickers = data.stickers || {};
+      for (const [id, s] of Object.entries(stickers)) {
+        placeSticker(id, s.src, s.x, s.y, s.w);
+      }
+    } catch (e) { console.error('Load error:', e); }
+  }
+
+  /* ── SAVE HELPERS ── */
+  function showSaved() {
+    const el = document.getElementById('save-indicator');
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 1800);
+  }
+  function debounceSave(field, value, delay=900) {
+    clearTimeout(saveTimers[field]);
+    saveTimers[field] = setTimeout(() => saveField(field, value), delay);
+  }
+  async function saveField(field, value) {
+    if (!currentUser) return;
+    try {
+      await set(ref(db, `users/${currentUser.uid}/weeks/${weekKey(currentMonday)}/${field}`), value);
+      showSaved();
+    } catch (e) { console.error('Save error:', e); }
+  }
+
+  /* ── DISABLE / ENABLE ── */
+  function disableEditors() {
+    for (let i = 0; i < 7; i++) {
+      const ed = document.getElementById(`day-${i}`);
+      if (ed) { ed.contentEditable = 'false'; ed.innerHTML = ''; ed.dataset.empty = 'true'; }
+    }
+    const notesEd = document.getElementById('notes-editor');
+    if (notesEd) { notesEd.contentEditable = 'false'; notesEd.innerHTML = ''; notesEd.dataset.empty = 'true'; }
+    clearStickers();
+  }
+
+  /* ── RICH TEXT FORMATTING ── */
+
+  /** Get the direct-child-of-editor div that contains the cursor */
+  function getCursorLine(editor) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    let node = sel.anchorNode;
+    // Must be inside this editor
+    if (!node || !editor.contains(node)) return null;
+    // Cursor is sitting directly on the editor root (empty box)
+    if (node === editor) return null;
+    // Walk up until we're a direct child of editor
+    while (node && node.parentElement && node.parentElement !== editor) {
+      node = node.parentElement;
+    }
+    if (!node || node === editor) return null;
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    if (node === editor) return null;
+    return node;
+  }
+
+  /** Toggle bullet or check formatting on the cursor's line */
+  function formatLine(editor, type) {
+    if (editor.contentEditable !== 'true') return;
+
+    editor.focus();
+
+    let line = getCursorLine(editor);
+
+    // No cursor line found — editor is empty or cursor is at the root.
+    // Create a proper child div, move cursor into it, then use it.
+    if (!line) {
+      if (!editor.querySelector('div')) {
+        const newDiv = document.createElement('div');
+        newDiv.innerHTML = '<br>';
+        editor.innerHTML = '';
+        editor.appendChild(newDiv);
+        const range = document.createRange();
+        const sel   = window.getSelection();
+        range.setStart(newDiv, 0);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      line = editor.lastElementChild || editor.firstElementChild;
+      // Clear the placeholder — content now exists
+      delete editor.dataset.empty;
+    }
+
+    if (!line || line === editor) return;
+
+    const isActive = line.classList.contains(`line-${type}`);
+    line.classList.remove('line-bullet', 'line-check', 'done');
+    if (!isActive) line.classList.add(`line-${type}`);
+  }
+
+  /** Keyboard handling: Enter continues list, Backspace on empty item exits */
+  function setupListKeyboard(editor, field) {
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const line = getCursorLine(editor);
+        if (!line) return;
+        const isBullet = line.classList.contains('line-bullet');
+        const isCheck  = line.classList.contains('line-check');
+        if (!isBullet && !isCheck) return;
+
+        e.preventDefault();
+
+        // Empty list item → exit list format
+        if (line.textContent.trim() === '') {
+          line.classList.remove('line-bullet', 'line-check', 'done');
+          return;
+        }
+
+        // Create new same-type line after current
+        const newLine = document.createElement('div');
+        if (isBullet) newLine.classList.add('line-bullet');
+        if (isCheck)  newLine.classList.add('line-check');
+        newLine.innerHTML = '<br>';
+        line.insertAdjacentElement('afterend', newLine);
+
+        // Move cursor there
+        const range = document.createRange();
+        const sel   = window.getSelection();
+        range.setStart(newLine, 0);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        debounceSave(field, editor.innerHTML);
+
+      } else if (e.key === 'Backspace') {
+        const line = getCursorLine(editor);
+        if (!line) return;
+        const isList = line.classList.contains('line-bullet') || line.classList.contains('line-check');
+        if (!isList) return;
+
+        // If cursor is at start of an empty list item, remove formatting
+        const sel = window.getSelection();
+        if (sel && sel.anchorOffset === 0 && line.textContent === '') {
+          e.preventDefault();
+          line.classList.remove('line-bullet', 'line-check', 'done');
+        }
+      }
+    });
+  }
+
+  /** Click on the checkbox ::before area (first 22px) to toggle done */
+  function setupCheckboxClick(editor, field) {
+    editor.addEventListener('mousedown', (e) => {
+      const line = e.target.closest('.line-check');
+      if (!line) return;
+      const rect = line.getBoundingClientRect();
+      if (e.clientX - rect.left < 22) {
+        e.preventDefault();
+        line.classList.toggle('done');
+        checkEmpty(editor);
+        debounceSave(field, editor.innerHTML);
+      }
+    });
+  }
+
+  /** Update active state on toolbar buttons based on cursor position */
+  function updateToolbarState(editor, toolbar) {
+    const line = getCursorLine(editor);
+    toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
+      const action = btn.dataset.action;
+      btn.classList.toggle('active', !!(line && line.classList.contains(`line-${action}`)));
+    });
+  }
+
+  /** Paste plain text only */
+  function setupPaste(editor) {
+    editor.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
+  }
+
+  /* ── ATTACH ALL LISTENERS ── */
+  function attachListeners() {
+    for (let i = 0; i < 7; i++) {
+      const editor  = document.getElementById(`day-${i}`);
+      const card    = document.getElementById(`day-card-${i}`);
+      const toolbar = card.querySelector('.editor-toolbar');
+      if (!editor) continue;
+
+      editor.contentEditable = 'true';
+
+      editor.addEventListener('input', () => {
+        checkEmpty(editor);
+        debounceSave(`day${i}`, editor.innerHTML);
+      });
+
+      editor.addEventListener('keyup', () => updateToolbarState(editor, toolbar));
+      editor.addEventListener('mouseup', () => updateToolbarState(editor, toolbar));
+      editor.addEventListener('focus', () => updateToolbarState(editor, toolbar));
+
+      toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // don't lose focus
+          formatLine(editor, btn.dataset.action);
+          debounceSave(`day${i}`, editor.innerHTML);
+          setTimeout(() => updateToolbarState(editor, toolbar), 0);
+        });
+      });
+
+      setupListKeyboard(editor, `day${i}`);
+      setupCheckboxClick(editor, `day${i}`);
+      setupPaste(editor);
+    }
+
+    const notesEd      = document.getElementById('notes-editor');
+    const notesToolbar = document.getElementById('notes-toolbar');
+    if (notesEd) {
+      notesEd.contentEditable = 'true';
+
+      notesEd.addEventListener('input', () => {
+        checkEmpty(notesEd);
+        debounceSave('notes', notesEd.innerHTML);
+      });
+
+      notesEd.addEventListener('keyup',  () => updateToolbarState(notesEd, notesToolbar));
+      notesEd.addEventListener('mouseup',() => updateToolbarState(notesEd, notesToolbar));
+      notesEd.addEventListener('focus',  () => updateToolbarState(notesEd, notesToolbar));
+
+      notesToolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          formatLine(notesEd, btn.dataset.action);
+          debounceSave('notes', notesEd.innerHTML);
+          setTimeout(() => updateToolbarState(notesEd, notesToolbar), 0);
+        });
+      });
+
+      setupListKeyboard(notesEd, 'notes');
+      setupCheckboxClick(notesEd, 'notes');
+      setupPaste(notesEd);
+    }
+  }
+
+  /* ── WEEK NAVIGATION ── */
+  async function goToWeek(monday) {
+    currentMonday = monday;
+    buildWeek();
+    if (currentUser) { disableEditors(); await loadWeekData(); attachListeners(); }
+  }
+  document.getElementById('prev-week').addEventListener('click', () => goToWeek(addDays(currentMonday,-7)));
+  document.getElementById('next-week').addEventListener('click', () => goToWeek(addDays(currentMonday, 7)));
+
+  /* ── MONTH CALENDAR POPUP ── */
+  let calViewMonth = new Date(currentMonday.getFullYear(), currentMonday.getMonth(), 1);
+  let calIsOpen = false;
+
+  function buildCalendar() {
+    const cal = document.getElementById('month-calendar');
+    const year = calViewMonth.getFullYear();
+    const month = calViewMonth.getMonth();
+    const monthLabel = new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    // Start from Monday of the week containing the 1st
+    const firstOfMonth = new Date(year, month, 1);
+    const dow = firstOfMonth.getDay();
+    const cursor = new Date(firstOfMonth);
+    cursor.setDate(cursor.getDate() + ((dow === 0) ? -6 : 1 - dow));
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const selKey = weekKey(currentMonday);
+
+    let html = `
+      <div class="cal-header">
+        <button class="cal-nav" id="cal-prev">&#8249;</button>
+        <span class="cal-month-label">${monthLabel}</span>
+        <button class="cal-nav" id="cal-next">&#8250;</button>
+      </div>
+      <table class="cal-grid">
+        <thead><tr>
+          <th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th>
+        </tr></thead><tbody>
+    `;
+
+    for (let w = 0; w < 6; w++) {
+      const weekMonday = new Date(cursor);
+      // Stop once we're fully into the next month (after row 4)
+      if (w >= 4 && cursor.getMonth() !== month) break;
+      const wk = weekKey(weekMonday);
+      html += `<tr class="cal-week-row${wk === selKey ? ' active-week' : ''}" data-monday="${wk}">`;
+      for (let d = 0; d < 7; d++) {
+        const isCurrentMonth = cursor.getMonth() === month;
+        const isToday = cursor.getTime() === today.getTime();
+        const num = cursor.getDate();
+        html += `<td class="cal-day-cell${!isCurrentMonth ? ' dim' : ''}">`;
+        html += isToday ? `<span class="cal-today-num">${num}</span>` : num;
+        html += '</td>';
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    cal.innerHTML = html;
+
+    document.getElementById('cal-prev').addEventListener('click', (e) => {
+      e.stopPropagation();
+      calViewMonth.setMonth(calViewMonth.getMonth() - 1);
+      buildCalendar();
+    });
+    document.getElementById('cal-next').addEventListener('click', (e) => {
+      e.stopPropagation();
+      calViewMonth.setMonth(calViewMonth.getMonth() + 1);
+      buildCalendar();
+    });
+
+    cal.querySelectorAll('.cal-week-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const [y,m,d] = row.dataset.monday.split('-').map(Number);
+        const mon = new Date(y, m-1, d);
+        goToWeek(mon);
+        closeCalendar();
+      });
+    });
+  }
+
+  function openCalendar() {
+    calViewMonth = new Date(currentMonday.getFullYear(), currentMonday.getMonth(), 1);
+    buildCalendar();
+    document.getElementById('month-calendar').classList.add('open');
+    calIsOpen = true;
+  }
+  function closeCalendar() {
+    document.getElementById('month-calendar').classList.remove('open');
+    calIsOpen = false;
+  }
+
+  document.getElementById('calendar-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    calIsOpen ? closeCalendar() : openCalendar();
+  });
+  document.addEventListener('click', () => { if (calIsOpen) closeCalendar(); });
+  document.getElementById('month-calendar').addEventListener('click', (e) => e.stopPropagation());
+
+  /* ══════════════════════
+     STICKER SYSTEM
+  ══════════════════════ */
+  function clearStickers() { document.getElementById('sticker-layer').innerHTML = ''; }
+
+  function placeSticker(id, src, xPct, yPct, w) {
+    const layer   = document.getElementById('sticker-layer');
+    const wrapper = document.createElement('div');
+    wrapper.className   = 'sticker';
+    wrapper.dataset.id  = id;
+    wrapper.style.left  = xPct + '%';
+    wrapper.style.top   = yPct + '%';
+    wrapper.style.width = w + 'px';
+    wrapper.style.zIndex = ++stickerZ;
+
+    const img = document.createElement('img');
+    img.src = src; img.alt = ''; img.draggable = false;
+
+    const del = document.createElement('button');
+    del.className   = 'sticker-del';
+    del.title       = 'Remove sticker';
+    del.textContent = '✕';
+    del.addEventListener('click', (e) => { e.stopPropagation(); removeStickerFromDB(id, wrapper); });
+
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'resize-handle';
+    resizeHandle.title     = 'Drag to resize';
+
+    const hint = document.createElement('div');
+    hint.className   = 'resize-hint';
+    hint.textContent = 'Drag corner to resize';
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(del);
+    wrapper.appendChild(resizeHandle);
+    wrapper.appendChild(hint);
+    layer.appendChild(wrapper);
+
+    enableStickerDrag(wrapper, id);
+    enableStickerResize(wrapper, resizeHandle, id);
+    enableStickerSelect(wrapper);
+  }
+
+  async function saveSticker(id, src, xPct, yPct, w) {
+    if (!currentUser) return;
+    try {
+      await set(ref(db, `users/${currentUser.uid}/weeks/${weekKey(currentMonday)}/stickers/${id}`), { src, x:xPct, y:yPct, w });
+      showSaved();
+    } catch(e) { console.error(e); }
+  }
+
+  function debounceSaveSticker(id, xPct, yPct, w) {
+    const key = `sticker_${id}`;
+    clearTimeout(saveTimers[key]);
+    saveTimers[key] = setTimeout(async () => {
+      if (!currentUser) return;
+      try {
+        const path = `users/${currentUser.uid}/weeks/${weekKey(currentMonday)}/stickers/${id}`;
+        const snap = await get(ref(db, path));
+        if (snap.exists()) {
+          await set(ref(db, path), { ...snap.val(), x:xPct, y:yPct, w });
+          showSaved();
+        }
+      } catch(e) { console.error(e); }
+    }, 600);
+  }
+
+  async function removeStickerFromDB(id, el) {
+    if (!currentUser) return;
+    try {
+      await remove(ref(db, `users/${currentUser.uid}/weeks/${weekKey(currentMonday)}/stickers/${id}`));
+      el.remove();
+    } catch(e) { console.error(e); }
+  }
+
+  function enableStickerDrag(wrapper, id) {
+    wrapper.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('resize-handle') ||
+          e.target.classList.contains('sticker-del')) return;
+      if (e.detail >= 2) return;
+      e.preventDefault(); e.stopPropagation();
+
+      const layer     = document.getElementById('sticker-layer');
+      const layerRect = layer.getBoundingClientRect();
+      wrapper.style.zIndex = ++stickerZ;
+
+      let moved = false;
+      const startMX  = e.clientX, startMY = e.clientY;
+      const startL   = (parseFloat(wrapper.style.left)/100)*layerRect.width;
+      const startT   = (parseFloat(wrapper.style.top) /100)*layerRect.height;
+
+      function onMove(ev) {
+        moved = true;
+        const maxL = layerRect.width  - wrapper.offsetWidth;
+        const maxT = layerRect.height - wrapper.offsetHeight;
+        const newL = Math.max(0, Math.min(maxL, startL + ev.clientX - startMX));
+        const newT = Math.max(0, Math.min(maxT, startT + ev.clientY - startMY));
+        wrapper.style.left = (newL/layerRect.width )*100 + '%';
+        wrapper.style.top  = (newT/layerRect.height)*100 + '%';
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+        if (moved) debounceSaveSticker(id, parseFloat(wrapper.style.left), parseFloat(wrapper.style.top), wrapper.offsetWidth);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onUp);
+    });
+  }
+
+  function enableStickerResize(wrapper, handle, id) {
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const startX = e.clientX, startW = wrapper.offsetWidth;
+      function onMove(ev) { wrapper.style.width = Math.max(40, Math.min(500, startW + ev.clientX - startX)) + 'px'; }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+        debounceSaveSticker(id, parseFloat(wrapper.style.left), parseFloat(wrapper.style.top), wrapper.offsetWidth);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onUp);
+    });
+  }
+
+  function enableStickerSelect(wrapper) {
+    wrapper.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      const was = wrapper.classList.contains('selected');
+      document.querySelectorAll('.sticker.selected').forEach(s => s.classList.remove('selected'));
+      if (!was) wrapper.classList.add('selected');
+    });
+  }
+
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.sticker'))
+      document.querySelectorAll('.sticker.selected').forEach(s => s.classList.remove('selected'));
+  });
+
+  /* ── IMAGE DRAG & DROP → STICKER ── */
+  function hasImageData(dt) {
+    if (!dt) return false;
+    const t = Array.from(dt.types||[]);
+    return t.includes('Files')||t.includes('text/html')||t.includes('text/uri-list');
+  }
+
+  function compressImage(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX=600; let w=img.width,h=img.height;
+          if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+          if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+          const c=document.createElement('canvas'); c.width=w; c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          resolve(c.toDataURL('image/jpeg',0.68));
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function imageDataFromUrl(url) {
+    try {
+      const r=await fetch(url,{mode:'cors'});
+      if(!r.ok) throw 0;
+      const blob=await r.blob();
+      if(!blob.type.startsWith('image/')) throw 0;
+      return await compressImage(new File([blob],'img',{type:blob.type}));
+    } catch { return url; }
+  }
+
+  let dragCounter = 0;
+  document.addEventListener('dragenter', (e) => {
+    if(hasImageData(e.dataTransfer)){dragCounter++;document.getElementById('drag-overlay').classList.add('visible');}
+  });
+  document.addEventListener('dragleave', () => {
+    dragCounter=Math.max(0,dragCounter-1);
+    if(dragCounter===0) document.getElementById('drag-overlay').classList.remove('visible');
+  });
+  document.addEventListener('dragover', (e) => { if(hasImageData(e.dataTransfer)) e.preventDefault(); });
+  document.addEventListener('drop', () => { dragCounter=0; document.getElementById('drag-overlay').classList.remove('visible'); });
+
+  const mainArea = document.getElementById('main-area');
+  mainArea.addEventListener('dragover', (e) => { if(hasImageData(e.dataTransfer)){e.preventDefault();e.dataTransfer.dropEffect='copy';} });
+  mainArea.addEventListener('drop', async (e) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter=0; document.getElementById('drag-overlay').classList.remove('visible');
+    if (!currentUser) return;
+
+    const layer     = document.getElementById('sticker-layer');
+    const layerRect = layer.getBoundingClientRect();
+    const defW      = 150;
+    const xPct = Math.max(0, ((e.clientX-layerRect.left)/layerRect.width )*100 - (defW/2/layerRect.width*100));
+    const yPct = Math.max(0, ((e.clientY-layerRect.top) /layerRect.height)*100 - 5);
+
+    let imgSrc = null;
+
+    const files = Array.from(e.dataTransfer.files||[]).filter(f=>f.type.startsWith('image/'));
+    if (files.length) imgSrc = await compressImage(files[0]);
+
+    if (!imgSrc) {
+      const items   = Array.from(e.dataTransfer.items||[]);
+      const imgItem = items.find(it=>it.type.startsWith('image/'));
+      if (imgItem) { const f=imgItem.getAsFile(); if(f) imgSrc=await compressImage(f); }
+    }
+    if (!imgSrc) {
+      const html     = e.dataTransfer.getData('text/html');
+      const srcMatch = html && html.match(/src="([^"]+)"/);
+      if (srcMatch && srcMatch[1] && !srcMatch[1].startsWith('data:blob')) imgSrc = await imageDataFromUrl(srcMatch[1]);
+    }
+    if (!imgSrc) {
+      const uriList = e.dataTransfer.getData('text/uri-list');
+      if (uriList) {
+        const url = uriList.split('\n').find(u=>u&&!u.startsWith('#'));
+        if (url) imgSrc = await imageDataFromUrl(url.trim());
+      }
+    }
+    if (!imgSrc) return;
+
+    const id = Date.now().toString();
+    placeSticker(id, imgSrc, xPct, yPct, defW);
+    await saveSticker(id, imgSrc, xPct, yPct, defW);
+  });
+
+  /* ── AUTH ── */
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('user-name').textContent = user.displayName||user.email||'User';
+      document.getElementById('user-info').style.display = 'flex';
+      document.getElementById('auth-btn').style.display  = 'none';
+      closeModal();
+      await loadWeekData();
+      attachListeners();
+    } else {
+      document.getElementById('user-info').style.display = 'none';
+      document.getElementById('auth-btn').style.display  = 'block';
+      disableEditors();
+    }
+  });
+
+  document.getElementById('sign-out-btn').addEventListener('click', () => signOut(auth));
+
+  /* ── MODAL ── */
+  let activeTab = 'login';
+  function openModal() { document.getElementById('modal-backdrop').classList.add('open'); document.getElementById('modal-error').textContent=''; }
+  function closeModal() { document.getElementById('modal-backdrop').classList.remove('open'); }
+
+  document.getElementById('auth-btn').addEventListener('click', openModal);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-backdrop').addEventListener('click', (e) => { if(e.target===document.getElementById('modal-backdrop')) closeModal(); });
+
+  document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      activeTab = tab.dataset.tab;
+      document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const btn=document.getElementById('email-auth-btn'), h2=document.querySelector('#auth-modal h2');
+      if(activeTab==='login'){btn.textContent='Sign in';h2.textContent='Welcome back';}
+      else{btn.textContent='Create account';h2.textContent='Create account';}
+      document.getElementById('modal-error').textContent='';
+    });
+  });
+
+  document.getElementById('email-auth-btn').addEventListener('click', async () => {
+    const email=document.getElementById('email-input').value.trim();
+    const pass =document.getElementById('password-input').value;
+    const errEl=document.getElementById('modal-error');
+    errEl.textContent='';
+    if(!email||!pass){errEl.textContent='Please enter your email and password.';return;}
+    try {
+      if(activeTab==='login') await signInWithEmailAndPassword(auth,email,pass);
+      else await createUserWithEmailAndPassword(auth,email,pass);
+    } catch(err){errEl.textContent=friendlyError(err.code);}
+  });
+
+  document.getElementById('google-btn').addEventListener('click', async () => {
+    const errEl=document.getElementById('modal-error'); errEl.textContent='';
+    try { await signInWithPopup(auth,new GoogleAuthProvider()); }
+    catch(err){ if(err.code!=='auth/popup-closed-by-user') errEl.textContent=friendlyError(err.code); }
+  });
+
+  function friendlyError(code) {
+    return ({
+      'auth/invalid-email':          'Invalid email address.',
+      'auth/user-disabled':          'This account has been disabled.',
+      'auth/user-not-found':         'No account found with this email.',
+      'auth/wrong-password':         'Incorrect password.',
+      'auth/email-already-in-use':   'An account with this email already exists.',
+      'auth/weak-password':          'Password should be at least 6 characters.',
+      'auth/too-many-requests':      'Too many attempts. Please try again later.',
+      'auth/invalid-credential':     'Invalid email or password.',
+      'auth/network-request-failed': 'Network error. Check your connection.',
+    })[code] || 'Something went wrong. Please try again.';
+  }
+
+  document.getElementById('password-input').addEventListener('keydown', (e) => {
+    if(e.key==='Enter') document.getElementById('email-auth-btn').click();
+  });
+
+  /* ── INIT ── */
+  buildWeek();
+</script>
+</body>
+</html>
