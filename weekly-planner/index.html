@@ -445,15 +445,19 @@
     #modal-backdrop.open { display: flex; }
 
     #gate-title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 300;
-      letter-spacing: 0.25em;
+      letter-spacing: 0.28em;
       text-transform: lowercase;
       color: var(--text-secondary);
-      opacity: 0.7;
-      animation: titleSlide 0.8s ease;
+      opacity: 0.75;
+      text-align: center;
+      margin-top: 10px;
+      z-index: 101;
+      pointer-events: none;
+      animation: titleIn 0.8s ease forwards;
     }
-    @keyframes titleSlide { from { opacity:0; transform:translateY(10px); } to { opacity:0.7; transform:translateY(0); } }
+    @keyframes titleIn { from { opacity:0; transform:translateY(8px); } to { opacity:0.75; transform:translateY(0); } }
     
     /* Gatekeeper mode: hide close button and disable clicking outside */
     #modal-backdrop.locked #modal-close { display: none; }
@@ -619,6 +623,7 @@
 <div id="save-indicator">Saved</div>
 
 <!-- ── FIREBASE + APP ── -->
+<!-- Build v2.1 -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
   import {
