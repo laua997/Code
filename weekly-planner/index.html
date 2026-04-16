@@ -447,17 +447,17 @@
     #gate-title {
       font-size: 14px;
       font-weight: 300;
-      letter-spacing: 0.28em;
+      letter-spacing: 0.32em;
       text-transform: lowercase;
       color: var(--text-secondary);
       opacity: 0.75;
       text-align: center;
-      margin-top: 10px;
+      margin-bottom: 8px;
       z-index: 101;
       pointer-events: none;
       animation: titleIn 0.8s ease forwards;
     }
-    @keyframes titleIn { from { opacity:0; transform:translateY(8px); } to { opacity:0.75; transform:translateY(0); } }
+    @keyframes titleIn { from { opacity:0; transform:translateY(-8px); } to { opacity:0.75; transform:translateY(0); } }
     
     /* Gatekeeper mode: hide close button and disable clicking outside */
     #modal-backdrop.locked #modal-close { display: none; }
@@ -593,6 +593,7 @@
 
 <!-- ── AUTH MODAL ── -->
 <div id="modal-backdrop">
+  <div id="gate-title">your weekly planner.</div>
   <div id="auth-modal">
     <button id="modal-close" title="Close">&#x2715;</button>
     <h2>Welcome back</h2>
@@ -617,7 +618,6 @@
     </button>
     <div id="modal-error"></div>
   </div>
-  <div id="gate-title">your weekly planner.</div>
 </div>
 
 <div id="save-indicator">Saved</div>
